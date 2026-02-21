@@ -17,6 +17,7 @@ async function getTransporter() {
   const user = reqEnv("SMTP_USER");
   const pass = reqEnv("SMTP_PASS");
 
+  // 587 = STARTTLS (secure false), 465 = SSL (secure true)
   const secure = port === 465;
 
   const transporter = nodemailer.createTransport({
@@ -95,5 +96,25 @@ export async function sendVerificationEmail(params: {
     subject: "LEXICON: Verify your email",
     html,
     text: `Verify: ${params.verifyUrl}`,
+  });
+}
+
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  resetUrl: string;
+}) {
+  const html = `
+    <div style="font-family:system-ui,Segoe UI,Roboto,Arial;">
+      <h2>LEXICON password reset</h2>
+      <p>Click to reset your password:</p>
+      <p><a href="${params.resetUrl}">${params.resetUrl}</a></p>
+      <p>If you didn’t request this, ignore it.</p>
+    </div>
+  `;
+  return sendEmail({
+    to: params.to,
+    subject: "LEXICON: Reset your password",
+    html,
+    text: `Reset: ${params.resetUrl}`,
   });
 }
