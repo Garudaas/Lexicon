@@ -41,7 +41,10 @@ setupSocket(io);
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '../dist');
   app.use(express.static(distPath));
-  app.get('*', (_req, res) => {
+
+  // Render-safe catch-all: serve the SPA for any non-API route
+  app.use((req, res) => {
+    if (req.path.startsWith('/api/')) return res.status(404).end();
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
