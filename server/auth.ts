@@ -2,7 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { supabase } from './db.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from './email.js';
+import { sendVerificationEmail } from './email.js';
+// sendPasswordResetEmail temporarily disabled until implemented
 
 declare global {
   namespace Express {
