@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import { io, type Socket } from "socket.io-client";
 
 type Player = {
@@ -41,11 +40,22 @@ const WS_EVENTS = {
   WORD_VALIDATION: "word_validation",
 } as const;
 
-export default function Game() {
-  const { code } = useParams();
-  const navigate = useNavigate();
+function go(path: string) {
+  window.history.pushState({}, "", path);
+  window.location.reload();
+}
 
-  const roomCode = (code || "").toUpperCase();
+function getRoomCodeFromPath(): string {
+  const p = window.location.pathname || "";
+  if (p.startsWith("/game/")) {
+    return (p.split("/game/")[1] || "").slice(0, 4).toUpperCase();
+  }
+  // fallback (set by App.tsx)
+  return ((window as any).__LEXICON_ROOM_CODE__ || "").toString().toUpperCase();
+}
+
+export default function Game() {
+  const roomCode = getRoomCodeFromPath();
   const playerId = localStorage.getItem("lexicon_playerId") || "";
   const playerName = localStorage.getItem("lexicon_playerName") || "";
 
@@ -65,12 +75,12 @@ export default function Game() {
   useEffect(() => {
     if (!roomCode || roomCode.length !== 4) {
       alert("Invalid room code");
-      navigate("/lobby");
+      go("/lobby");
       return;
     }
     if (!playerId || !playerName) {
       alert("Missing player session. Go to Lobby and join again.");
-      navigate("/lobby");
+      go("/lobby");
       return;
     }
 
@@ -94,7 +104,7 @@ export default function Game() {
     return () => {
       s.disconnect();
     };
-  }, [roomCode, playerId, playerName, navigate]);
+  }, [roomCode, playerId, playerName]);
 
   function startGame() {
     socket?.emit(WS_EVENTS.START_GAME, { code: roomCode });
@@ -134,13 +144,12 @@ export default function Game() {
             You: <b>{playerName}</b> {isHost ? "(Host)" : ""}
           </div>
         </div>
-        <button onClick={() => navigate("/lobby")} style={{ padding: 10, borderRadius: 12 }}>
+        <button onClick={() => go("/lobby")} style={{ padding: 10, borderRadius: 12 }}>
           Exit
         </button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, marginTop: 16 }}>
-        {/* Main panel */}
         <div style={{ padding: 16, borderRadius: 16, border: "1px solid rgba(255,255,255,0.12)" }}>
           <div style={{ fontSize: 14, opacity: 0.85 }}>Status: {state?.status || "connecting..."}</div>
 
@@ -165,12 +174,7 @@ export default function Game() {
               <button
                 onClick={buzz}
                 disabled={!canBuzz || state?.status !== "playing"}
-                style={{
-                  padding: "14px 18px",
-                  borderRadius: 999,
-                  fontWeight: 900,
-                  fontSize: 16,
-                }}
+                style={{ padding: "14px 18px", borderRadius: 999, fontWeight: 900, fontSize: 16 }}
               >
                 BUZZ
               </button>
@@ -230,7 +234,6 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Players / scoreboard */}
         <div style={{ padding: 16, borderRadius: 16, border: "1px solid rgba(255,255,255,0.12)" }}>
           <div style={{ fontWeight: 900, marginBottom: 10 }}>Players ({players.length})</div>
           <div style={{ display: "grid", gap: 10 }}>
