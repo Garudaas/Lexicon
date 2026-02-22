@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 type CreateRoomResponse = { code: string; playerId: string; name: string; isHost: boolean };
 type JoinRoomResponse = { playerId: string; name: string; isHost: boolean; code: string };
 
+function go(path: string) {
+  window.history.pushState({}, "", path);
+  window.location.reload();
+}
+
 export default function Lobby() {
-  const navigate = useNavigate();
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,7 +30,7 @@ export default function Lobby() {
       localStorage.setItem("lexicon_playerId", ok.playerId);
       localStorage.setItem("lexicon_playerName", ok.name);
 
-      navigate(`/game/${ok.code}`);
+      go(`/game/${ok.code}`);
     } catch (e: any) {
       alert(e?.message || "Create room failed");
     } finally {
@@ -54,7 +57,7 @@ export default function Lobby() {
       localStorage.setItem("lexicon_playerId", ok.playerId);
       localStorage.setItem("lexicon_playerName", ok.name);
 
-      navigate(`/game/${code}`);
+      go(`/game/${code}`);
     } catch (e: any) {
       alert(e?.message || "Join room failed");
     } finally {
