@@ -134,8 +134,6 @@ function startRound() {
       code: roomCode,
       hostId: playerId,
     });
-  }
-
   return (
     <div style={{ padding: 20 }}>
       <h2>Room {roomCode}</h2>
@@ -187,3 +185,4 @@ function startRound() {
       ))}
     </div>
   );
+  }
