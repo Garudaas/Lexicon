@@ -57,10 +57,7 @@ export default function Game() {
       return;
     }
 
-    const s = io(window.location.origin, {
-      path: "/socket.io",
-      transports: ["websocket"],
-    });
+  const s = io(window.location.origin);
 
     s.on("connect", () => {
       s.emit(WS.JOIN_ROOM, { code: roomCode, playerId });
