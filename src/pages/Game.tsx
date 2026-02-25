@@ -74,13 +74,21 @@ export default function Game() {
   }, []);
 
 function startRound() {
-  console.log("playerId:", playerId);
-  console.log("room.hostId:", state?.hostId);
-  console.log("Start Round Clicked");
-  if (!isHost || !state) {
-    console.log("Blocked:", { isHost, state });
+  if (!isHost || !state) return;
+
+  const ids = Object.keys(state.players);
+
+  if (ids.length < 2) {
+    alert("Need at least 2 players to start round.");
     return;
   }
+
+  socket?.emit("host_start_round", {
+    code: roomCode,
+    hostId: playerId,
+    pickerIds: ids.slice(0, 2),
+  });
+}
 
   const ids = Object.keys(state.players);
   console.log("Sending event", ids);
