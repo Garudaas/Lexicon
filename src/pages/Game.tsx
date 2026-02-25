@@ -73,16 +73,22 @@ export default function Game() {
     return () => s.disconnect();
   }, []);
 
-  function startRound() {
-    if (!isHost || !state) return;
-
-    const ids = Object.keys(state.players);
-    socket?.emit(WS.HOST_START_ROUND, {
-      code: roomCode,
-      hostId: playerId,
-      pickerIds: ids.slice(0, 2), // first 2 players
-    });
+function startRound() {
+  console.log("Start Round Clicked");
+  if (!isHost || !state) {
+    console.log("Blocked:", { isHost, state });
+    return;
   }
+
+  const ids = Object.keys(state.players);
+  console.log("Sending event", ids);
+
+  socket?.emit("host_start_round", {
+    code: roomCode,
+    hostId: playerId,
+    pickerIds: ids.slice(0, 2),
+  });
+}
 
   function pickLetter(letter: string) {
     socket?.emit(WS.HOST_PICK_LETTER, {
