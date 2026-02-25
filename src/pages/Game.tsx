@@ -73,22 +73,29 @@ export default function Game() {
     return () => s.disconnect();
   }, []);
 
-  function startRound() {
-    if (!isHost || !state?.players) return;
+function startRound() {
+  console.log("Start round clicked");
+  console.log("isHost:", isHost);
+  console.log("state:", state);
 
-    const ids = Object.keys(state.players);
+  if (!isHost || !state?.players) return;
 
-    if (ids.length < 2) {
-      alert("Need at least 2 players to start round.");
-      return;
-    }
+  const ids = Object.keys(state.players);
+  console.log("Player IDs:", ids);
 
-    socket?.emit(WS.HOST_START_ROUND, {
-      code: roomCode,
-      hostId: playerId,
-      pickerIds: ids.slice(0, 2),
-    });
+  if (ids.length < 2) {
+    alert("Need at least 2 players to start round.");
+    return;
   }
+
+  socket?.emit(WS.HOST_START_ROUND, {
+    code: roomCode,
+    hostId: playerId,
+    pickerIds: ids.slice(0, 2),
+  });
+
+  console.log("host_start_round emitted");
+}
 
   function pickLetter(letter: string) {
     if (!letter) return;
