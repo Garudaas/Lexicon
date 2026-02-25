@@ -74,6 +74,8 @@ export default function Game() {
   }, []);
 
 function startRound() {
+  console.log("playerId:", playerId);
+  console.log("room.hostId:", state?.hostId);
   console.log("Start Round Clicked");
   if (!isHost || !state) {
     console.log("Blocked:", { isHost, state });
