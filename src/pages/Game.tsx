@@ -44,8 +44,8 @@ export default function Game() {
   const [word, setWord] = useState("");
 
   const players = useMemo(() => {
-    if (!state) return [];
-    return Object.values(state.players || {}) as Player[];
+    if (!state?.players) return [];
+    return Object.values(state.players) as Player[];
   }, [state]);
 
   const me = state?.players?.[playerId];
@@ -57,7 +57,7 @@ export default function Game() {
       return;
     }
 
-  const s = io(window.location.origin);
+    const s = io(window.location.origin);
 
     s.on("connect", () => {
       s.emit(WS.JOIN_ROOM, { code: roomCode, playerId });
@@ -73,34 +73,26 @@ export default function Game() {
     return () => s.disconnect();
   }, []);
 
-function startRound() {
-  if (!isHost || !state) return;
+  function startRound() {
+    if (!isHost || !state?.players) return;
 
-  const ids = Object.keys(state.players);
+    const ids = Object.keys(state.players);
 
-  if (ids.length < 2) {
-    alert("Need at least 2 players to start round.");
-    return;
+    if (ids.length < 2) {
+      alert("Need at least 2 players to start round.");
+      return;
+    }
+
+    socket?.emit(WS.HOST_START_ROUND, {
+      code: roomCode,
+      hostId: playerId,
+      pickerIds: ids.slice(0, 2),
+    });
   }
 
-  socket?.emit("host_start_round", {
-    code: roomCode,
-    hostId: playerId,
-    pickerIds: ids.slice(0, 2),
-  });
-}
-
-  const ids = Object.keys(state.players);
-  console.log("Sending event", ids);
-
-  socket?.emit("host_start_round", {
-    code: roomCode,
-    hostId: playerId,
-    pickerIds: ids.slice(0, 2),
-  });
-}
-
   function pickLetter(letter: string) {
+    if (!letter) return;
+
     socket?.emit(WS.HOST_PICK_LETTER, {
       code: roomCode,
       playerId,
@@ -121,11 +113,13 @@ function startRound() {
 
   function submitWord() {
     if (!word.trim()) return;
+
     socket?.emit(WS.SUBMIT_WORD, {
       code: roomCode,
       playerId,
       word,
     });
+
     setWord("");
   }
 
@@ -134,19 +128,28 @@ function startRound() {
       code: roomCode,
       hostId: playerId,
     });
+  }
+
+  // Prevent blank crash screen
+  if (!state) {
+    return <div style={{ padding: 20 }}>Loading game...</div>;
+  }
+
   return (
     <div style={{ padding: 20 }}>
       <h2>Room {roomCode}</h2>
-      <div>Status: {state?.status}</div>
+
+      <div>Status: {state.status}</div>
+
       <div>
-        Letters: {state?.startLetter || "_"} → {state?.endLetter || "_"}
+        Letters: {state.startLetter || "_"} → {state.endLetter || "_"}
       </div>
 
-      {isHost && state?.status === "waiting" && (
+      {isHost && state.status === "waiting" && (
         <button onClick={startRound}>Start Round</button>
       )}
 
-      {state?.status === "picking_letters" && (
+      {state.status === "picking_letters" && (
         <div>
           <button onClick={() => pickLetter(prompt("Letter?") || "")}>
             Pick Letter
@@ -154,15 +157,15 @@ function startRound() {
         </div>
       )}
 
-      {isHost && state?.status === "picking_letters" && state?.pickerLocked && (
+      {isHost && state.status === "picking_letters" && state.pickerLocked && (
         <button onClick={openBuzzer}>Open Buzzer</button>
       )}
 
-      {state?.status === "buzz_open" && (
+      {state.status === "buzz_open" && (
         <button onClick={buzz}>BUZZ</button>
       )}
 
-      {state?.status === "answering" && (
+      {state.status === "answering" && (
         <div>
           <input
             value={word}
@@ -173,11 +176,12 @@ function startRound() {
         </div>
       )}
 
-      {isHost && state?.status === "round_end" && (
+      {isHost && state.status === "round_end" && (
         <button onClick={nextRound}>Next Round</button>
       )}
 
       <h3>Players</h3>
+
       {players.map((p) => (
         <div key={p.id}>
           {p.name} {p.isHost ? "👑" : ""} - {p.score}
@@ -185,4 +189,4 @@ function startRound() {
       ))}
     </div>
   );
-  }
+}
