@@ -131,6 +131,14 @@ router.post('/signup', async (req: Request, res: Response) => {
       .update({ active_session_id: session.id })
       .eq('id', user.id);
 
+    await supabase
+      .from('player_profiles')
+      .insert({ id: user.id, bio: '', avatar_url: null });
+
+    await supabase
+      .from('player_stats')
+      .insert({ user_id: user.id, wins: 0, losses: 0, games_played: 0 });
+
     const verifyToken = randomUUID();
     const verifyOTP = generateOTP();
     await supabase.from('verification_tokens').insert({

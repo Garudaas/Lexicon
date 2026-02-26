@@ -6,6 +6,19 @@ import cors from "cors";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import checkWord from "check-word";
+import { requireAuth } from "./auth.ts";
+import {
+  saveGameResult,
+  getPlayerStats,
+  getGlobalLeaderboard,
+  getWeeklyLeaderboard,
+  sendFriendRequest,
+  respondToFriendRequest,
+  getFriendsList,
+  getPendingFriendRequests,
+  getPlayerProfile,
+  updatePlayerProfile,
+} from "./stats.ts";
 
 const words = checkWord("en");
 
@@ -177,6 +190,134 @@ app.post("/api/rooms/join", (req, res) => {
   room.players[playerId] = { id: playerId, name, isHost: false, score: 0, connected: true };
 
   return res.status(200).json({ code, playerId, name, isHost: false });
+});
+
+/* ---------- STATS & LEADERBOARD ENDPOINTS ---------- */
+
+app.post("/api/game/result", requireAuth, async (req, res) => {
+  try {
+    const { roomId, score, finalPosition, wordsUsed, highestWordValue, gameDuration } = req.body;
+    const result = await saveGameResult(
+      req.user!.id,
+      roomId,
+      score,
+      finalPosition,
+      wordsUsed || [],
+      highestWordValue || 0,
+      gameDuration || 0
+    );
+    res.json(result);
+  } catch (err) {
+    console.error("Error saving game result:", err);
+    res.status(500).json({ error: "Failed to save game result" });
+  }
+});
+
+app.get("/api/stats/me", requireAuth, async (req, res) => {
+  try {
+    const stats = await getPlayerStats(req.user!.id);
+    res.json(stats || {});
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+    res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+app.get("/api/leaderboard/global", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const leaderboard = await getGlobalLeaderboard(limit);
+    res.json(leaderboard);
+  } catch (err) {
+    console.error("Error fetching global leaderboard:", err);
+    res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+app.get("/api/leaderboard/weekly", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const leaderboard = await getWeeklyLeaderboard(limit);
+    res.json(leaderboard);
+  } catch (err) {
+    console.error("Error fetching weekly leaderboard:", err);
+    res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+/* ---------- FRIEND ENDPOINTS ---------- */
+
+app.post("/api/friends/request", requireAuth, async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) return res.status(400).json({ error: "Username required" });
+
+    const result = await sendFriendRequest(req.user!.id, username);
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    console.error("Error sending friend request:", err);
+    res.status(500).json({ error: "Failed to send friend request" });
+  }
+});
+
+app.post("/api/friends/respond", requireAuth, async (req, res) => {
+  try {
+    const { requestId, accept } = req.body;
+    if (!requestId) return res.status(400).json({ error: "Request ID required" });
+
+    const result = await respondToFriendRequest(requestId, req.user!.id, accept);
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  } catch (err) {
+    console.error("Error responding to friend request:", err);
+    res.status(500).json({ error: "Failed to respond to request" });
+  }
+});
+
+app.get("/api/friends/list", requireAuth, async (req, res) => {
+  try {
+    const friendIds = await getFriendsList(req.user!.id);
+    res.json({ friends: friendIds });
+  } catch (err) {
+    console.error("Error fetching friends:", err);
+    res.status(500).json({ error: "Failed to fetch friends" });
+  }
+});
+
+app.get("/api/friends/requests", requireAuth, async (req, res) => {
+  try {
+    const requests = await getPendingFriendRequests(req.user!.id);
+    res.json(requests);
+  } catch (err) {
+    console.error("Error fetching friend requests:", err);
+    res.status(500).json({ error: "Failed to fetch requests" });
+  }
+});
+
+/* ---------- PROFILE ENDPOINTS ---------- */
+
+app.get("/api/profile/:userId", async (req, res) => {
+  try {
+    const profile = await getPlayerProfile(req.params.userId);
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    res.json(profile);
+  } catch (err) {
+    console.error("Error fetching profile:", err);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+app.put("/api/profile/me", requireAuth, async (req, res) => {
+  try {
+    const updates = req.body;
+    const profile = await updatePlayerProfile(req.user!.id, updates);
+    if (!profile) return res.status(500).json({ error: "Failed to update profile" });
+    res.json(profile);
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
 });
 
 /* ---------------- SOCKET ---------------- */
